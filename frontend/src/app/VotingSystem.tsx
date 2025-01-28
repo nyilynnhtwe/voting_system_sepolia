@@ -189,7 +189,6 @@ const CONTRACT_ABI = [
 ];
 
 export default function Home() {
-  const [web3, setWeb3] = useState(null);
   const [contract, setContract] = useState(null);
   const [account, setAccount] = useState("");
   const [candidates, setCandidates] = useState([]);
@@ -200,8 +199,6 @@ export default function Home() {
     const initWeb3 = async () => {
       if (window.ethereum) {
         const web3Instance = new Web3(window.ethereum);
-        setWeb3(web3Instance);
-
         try {
           await window.ethereum.request({ method: "eth_requestAccounts" });
           const accounts = await web3Instance.eth.getAccounts();
