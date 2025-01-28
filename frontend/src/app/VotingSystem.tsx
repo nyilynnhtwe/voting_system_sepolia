@@ -202,12 +202,15 @@ export default function Home() {
         try {
           await window.ethereum.request({ method: "eth_requestAccounts" });
           const accounts = await web3Instance.eth.getAccounts();
+          console.log(accounts);
           setAccount(accounts[0]);
   
           const contractInstance = new web3Instance.eth.Contract(
             CONTRACT_ABI,
             CONTRACT_ADDRESS
           );
+          console.log(contractInstance);
+          
           setContract(contractInstance);
   
           loadCandidates(contractInstance);
@@ -232,10 +235,12 @@ export default function Home() {
   
 
   const loadCandidates = async (contractInstance) => {
-    const count = await contractInstance.methods.getCandidatesCount().call();
+    const count = await contractInstance.methods.getCandidatesCount().call();  
     const candidatesList = [];
     for (let i = 0; i < count; i++) {
       const candidate = await contractInstance.methods.getCandidate(i).call();
+      console.log(candidate);
+      
       candidatesList.push({
         name: candidate.name,
         voteCount: candidate.voteCount,
