@@ -203,15 +203,22 @@ export default function Home() {
           await window.ethereum.request({ method: "eth_requestAccounts" });
           const accounts = await web3Instance.eth.getAccounts();
           setAccount(accounts[0]);
-
+  
           const contractInstance = new web3Instance.eth.Contract(
             CONTRACT_ABI,
             CONTRACT_ADDRESS
           );
           setContract(contractInstance);
-
+  
           loadCandidates(contractInstance);
           checkVotingStatus(contractInstance);
+  
+          // Listen for account changes and reload data
+          window.ethereum.on("accountsChanged", async (accounts) => {
+            setAccount(accounts[0]);
+            loadCandidates(contractInstance);
+            checkVotingStatus(contractInstance);
+          });
         } catch (error) {
           console.error("Error connecting to MetaMask:", error);
         }
@@ -219,9 +226,10 @@ export default function Home() {
         console.error("MetaMask not detected.");
       }
     };
-
+  
     initWeb3();
   }, []);
+  
 
   const loadCandidates = async (contractInstance) => {
     const count = await contractInstance.methods.getCandidatesCount().call();
