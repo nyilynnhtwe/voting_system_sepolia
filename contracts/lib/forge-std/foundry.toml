@@ -1,5 +1,6 @@
 [profile.default]
 fs_permissions = [{ access = "read-write", path = "./"}]
+solc_version = "0.8.20"
 
 [rpc_endpoints]
 # The RPC URLs are modified versions of the default for testing initialization.

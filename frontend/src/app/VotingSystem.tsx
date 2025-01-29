@@ -209,8 +209,26 @@ export default function Home() {
             CONTRACT_ABI,
             CONTRACT_ADDRESS
           );
-          console.log(contractInstance);
-
+          contract.events["CandidateAdded"]({}, (error, event) => {
+            loadCandidates(contractInstance);
+            if (error) {
+                console.error("Error:", error);
+                return;
+            }
+        
+            console.log("New event received:");
+            console.log(event.returnValues);
+        })
+        .on("connected", () => {
+            console.log("Connected to the blockchain");
+        })
+        .on("changed", (event) => {
+            console.log("Event changed:", event.returnValues);
+        })
+        .on("error", (error) => {
+            console.error("Event error:", error);
+        });
+        console.log("End of routine");
           setContract(contractInstance);
 
           loadCandidates(contractInstance);
