@@ -195,6 +195,15 @@ export default function Home() {
   const [candidates, setCandidates] = useState([]);
   const [votingEnded, setVotingEnded] = useState(false);
   const [newCandidateName, setNewCandidateName] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState("");
+  const [dialogType, setDialogType] = useState("success"); // 'success' or 'error'
+
+  const showDialog = (message, type = "success") => {
+    setDialogMessage(message);
+    setDialogType(type);
+    setDialogOpen(true);
+  };
 
   useEffect(() => {
     const initWeb3 = async () => {
@@ -209,8 +218,10 @@ export default function Home() {
             CONTRACT_ABI,
             CONTRACT_ADDRESS
           );
-          
-          setHasVoted(await contractInstance.methods.hasVoted(accounts[0]).call());
+
+          setHasVoted(
+            await contractInstance.methods.hasVoted(accounts[0]).call()
+          );
           //events
           const candidateAddedEvent = contractInstance.events.CandidateAdded(
             {}
@@ -233,7 +244,9 @@ export default function Home() {
           // Listen for account changes and reload data
           window.ethereum.on("accountsChanged", async (accounts) => {
             setAccount(accounts[0]);
-            setHasVoted(await contractInstance.methods.hasVoted(accounts[0]).call());
+            setHasVoted(
+              await contractInstance.methods.hasVoted(accounts[0]).call()
+            );
             loadCandidates(contractInstance);
             checkVotingStatus(contractInstance);
           });
@@ -253,8 +266,6 @@ export default function Home() {
     const candidatesList = [];
     for (let i = 0; i < count; i++) {
       const candidate = await contractInstance.methods.getCandidate(i).call();
-      console.log(candidate);
-
       candidatesList.push({
         name: candidate.name,
         voteCount: candidate.voteCount,
@@ -272,10 +283,11 @@ export default function Home() {
     if (!contract || !account) return;
     try {
       await contract.methods.vote(candidateIndex).send({ from: account });
-      alert("Vote cast successfully!");
+      showDialog("Vote cast successfully!");
       loadCandidates(contract);
     } catch (error) {
       console.error("Error voting:", error);
+      showDialog(error.message || "Error voting.", "error");
     }
   };
 
@@ -285,11 +297,12 @@ export default function Home() {
       await contract.methods
         .addCandidate(newCandidateName)
         .send({ from: account });
-      alert("Candidate added successfully!");
+      showDialog("Candidate added successfully!");
       setNewCandidateName("");
       loadCandidates(contract);
     } catch (error) {
       console.error("Error adding candidate:", error);
+      showDialog(error.message || "Error adding candidate.", "error");
     }
   };
 
@@ -297,16 +310,20 @@ export default function Home() {
     if (!contract || !account) return;
     try {
       await contract.methods.endVoting().send({ from: account });
-      alert("Voting ended successfully!");
+      showDialog("Voting ended successfully!");
+
       setVotingEnded(true);
     } catch (error) {
       console.error("Error ending voting:", error);
+      showDialog(error.message || "Error ending voting.", "error");
     }
   };
 
   const handleDisconnectWallet = () => {
     setAccount(""); // Clear the connected account
-    alert("Wallet disconnected. Please connect a new wallet.");
+    setCandidates([]);
+    setHasVoted(false);
+    showDialog("Wallet disconnected. Please connect a new wallet.");
   };
 
   const handleConnectWallet = async () => {
@@ -323,8 +340,92 @@ export default function Home() {
       console.error("MetaMask not detected.");
     }
   };
+
+  const Dialog = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div
+        className={`bg-white rounded-xl p-6 max-w-sm w-full shadow-lg transform transition-all ${
+          dialogType === "success"
+            ? "border-2 border-green-500"
+            : "border-2 border-red-500"
+        }`}
+      >
+        <div className="text-center">
+          <div
+            className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full ${
+              dialogType === "success" ? "bg-green-100" : "bg-red-100"
+            }`}
+          >
+            {dialogType === "success" ? (
+              <svg
+                className="h-6 w-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="h-6 w-6 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            )}
+          </div>
+          <h3
+            className={`mt-2 text-lg font-medium ${
+              dialogType === "success" ? "text-green-800" : "text-red-800"
+            }`}
+          >
+            {dialogType === "success" ? "Success!" : "Error!"}
+          </h3>
+          <div className="mt-2">
+            <p
+              className={`text-sm ${
+                dialogType === "success" ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {dialogMessage}
+            </p>
+          </div>
+          <div className="mt-5">
+            <button
+              onClick={() => setDialogOpen(false)}
+              className={`w-full px-4 py-2 rounded-md text-base font-medium text-white ${
+                dialogType === "success"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-red-600 hover:bg-red-700"
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                dialogType === "success"
+                  ? "focus:ring-green-500"
+                  : "focus:ring-red-500"
+              }`}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-100 p-4">
+      {dialogOpen && <Dialog />}
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold text-black text-center mb-6">
           Voting System
@@ -361,7 +462,15 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
             <div className="flex-1 truncate">
               <p className="text-sm text-black font-bold">
-                {hasVoted ? (<>You have <span className="text-xl">Voted</span></>) : (<>You have <span className="text-xl">Not Voted</span></>) }
+                {hasVoted ? (
+                  <>
+                    You have <span className="text-xl">Voted</span>
+                  </>
+                ) : (
+                  <>
+                    You have <span className="text-xl">Not Voted</span>
+                  </>
+                )}
               </p>
             </div>
           </div>
