@@ -316,7 +316,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-center mb-6">Voting System</h1>
+        <h1 className="text-2xl font-bold text-black text-center mb-6">Voting System</h1>
 
         {/* Wallet Connection Section */}
         <div className="mb-6 p-4 bg-white rounded-lg shadow">
@@ -355,7 +355,7 @@ export default function Home() {
         {/* Candidates List */}
         {!votingEnded && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Candidates</h2>
+            <h2 className="text-lg font-semibold mb-4 text-black">Candidates</h2>
             <div className="space-y-3">
               {candidates.map((candidate, index) => (
                 <div
