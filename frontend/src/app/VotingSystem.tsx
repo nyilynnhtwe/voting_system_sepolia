@@ -191,6 +191,7 @@ const CONTRACT_ABI = [
 export default function Home() {
   const [contract, setContract] = useState(null);
   const [account, setAccount] = useState("");
+  const [hasVoted, setHasVoted] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [votingEnded, setVotingEnded] = useState(false);
   const [newCandidateName, setNewCandidateName] = useState("");
@@ -208,10 +209,18 @@ export default function Home() {
             CONTRACT_ABI,
             CONTRACT_ADDRESS
           );
-          console.log(contractInstance);
+          
+          setHasVoted(await contractInstance.methods.hasVoted(accounts[0]).call());
+          //events
           const candidateAddedEvent = contractInstance.events.CandidateAdded(
             {}
           );
+          const voteCastedEvent = contractInstance.events.VoteCasted({});
+
+          voteCastedEvent.on("data", (data) => {
+            console.log(data);
+            loadCandidates(contractInstance);
+          });
           candidateAddedEvent.on("data", (event) => {
             console.log(event);
             loadCandidates(contractInstance);
@@ -224,6 +233,7 @@ export default function Home() {
           // Listen for account changes and reload data
           window.ethereum.on("accountsChanged", async (accounts) => {
             setAccount(accounts[0]);
+            setHasVoted(await contractInstance.methods.hasVoted(accounts[0]).call());
             loadCandidates(contractInstance);
             checkVotingStatus(contractInstance);
           });
@@ -316,7 +326,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-black text-center mb-6">Voting System</h1>
+        <h1 className="text-2xl font-bold text-black text-center mb-6">
+          Voting System
+        </h1>
 
         {/* Wallet Connection Section */}
         <div className="mb-6 p-4 bg-white rounded-lg shadow">
@@ -345,6 +357,16 @@ export default function Home() {
           )}
         </div>
 
+        <div className="mb-6 p-4 bg-white rounded-lg shadow">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className="flex-1 truncate">
+              <p className="text-sm text-black font-bold">
+                {hasVoted ? (<>You have <span className="text-xl">Voted</span></>) : (<>You have <span className="text-xl">Not Voted</span></>) }
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Voting Status */}
         {votingEnded && (
           <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-center">
@@ -355,7 +377,9 @@ export default function Home() {
         {/* Candidates List */}
         {!votingEnded && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4 text-black">Candidates</h2>
+            <h2 className="text-lg font-semibold mb-4 text-black">
+              Candidates
+            </h2>
             <div className="space-y-3">
               {candidates.map((candidate, index) => (
                 <div
