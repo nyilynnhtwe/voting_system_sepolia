@@ -202,33 +202,20 @@ export default function Home() {
         try {
           await window.ethereum.request({ method: "eth_requestAccounts" });
           const accounts = await web3Instance.eth.getAccounts();
-          console.log(accounts);
           setAccount(accounts[0]);
 
           const contractInstance = new web3Instance.eth.Contract(
             CONTRACT_ABI,
             CONTRACT_ADDRESS
           );
-          contract.events["CandidateAdded"]({}, (error, event) => {
+          console.log(contractInstance);
+          const candidateAddedEvent = contractInstance.events.CandidateAdded(
+            {}
+          );
+          candidateAddedEvent.on("data", (event) => {
+            console.log(event);
             loadCandidates(contractInstance);
-            if (error) {
-                console.error("Error:", error);
-                return;
-            }
-        
-            console.log("New event received:");
-            console.log(event.returnValues);
-        })
-        .on("connected", () => {
-            console.log("Connected to the blockchain");
-        })
-        .on("changed", (event) => {
-            console.log("Event changed:", event.returnValues);
-        })
-        .on("error", (error) => {
-            console.error("Event error:", error);
-        });
-        console.log("End of routine");
+          });
           setContract(contractInstance);
 
           loadCandidates(contractInstance);
@@ -326,96 +313,104 @@ export default function Home() {
       console.error("MetaMask not detected.");
     }
   };
-
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-center mb-8">Voting System</h1>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold text-center mb-6">Voting System</h1>
 
-        {/* Display Connected Wallet Address */}
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg shadow flex justify-between items-center">
+        {/* Wallet Connection Section */}
+        <div className="mb-6 p-4 bg-white rounded-lg shadow">
           {account ? (
-            <>
-              <p className="text-sm font-medium text-blue-700">
-                Connected Wallet: <span className="font-mono">{account}</span>
-              </p>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+              <div className="flex-1 truncate">
+                <p className="text-sm text-gray-600">Connected:</p>
+                <p className="text-sm font-medium text-blue-600 truncate">
+                  {account}
+                </p>
+              </div>
               <button
                 onClick={handleDisconnectWallet}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 text-sm w-full sm:w-auto"
               >
-                Disconnect Wallet
+                Disconnect
               </button>
-            </>
+            </div>
           ) : (
             <button
               onClick={handleConnectWallet}
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Connect Wallet
             </button>
           )}
         </div>
 
-        {votingEnded ? (
-          <p className="text-center text-red-500">Voting has ended.</p>
-        ) : (
-          <div>
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">Candidates</h2>
-              <div className="space-y-4">
-                {candidates.map((candidate, index) => (
-                  <div
-                    key={index}
-                    className="p-4 bg-white rounded-lg shadow flex justify-between items-center"
-                  >
-                    <span className="font-medium">{candidate.name}</span>
-                    <button
-                      onClick={() => handleVote(index)}
-                      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                      Vote ({candidate.voteCount})
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* lee */}
-            {account === "0xe11ff5Ec85b6988B87Bafcd8c46975aF3D346413" && (
-              <>
-                <div className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">
-                    Add Candidate (Admin Only)
-                  </h2>
-                  <div className="flex space-x-4">
-                    <input
-                      type="text"
-                      value={newCandidateName}
-                      onChange={(e) => setNewCandidateName(e.target.value)}
-                      placeholder="Candidate Name"
-                      className="flex-1 p-2 border rounded"
-                    />
-                    <button
-                      onClick={handleAddCandidate}
-                      className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <button
-                    onClick={handleEndVoting}
-                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    End Voting
-                  </button>
-                </div>
-              </>
-            )}
+        {/* Voting Status */}
+        {votingEnded && (
+          <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-center">
+            Voting has ended
           </div>
         )}
+
+        {/* Candidates List */}
+        {!votingEnded && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-4">Candidates</h2>
+            <div className="space-y-3">
+              {candidates.map((candidate, index) => (
+                <div
+                  key={index}
+                  className="p-4 bg-white rounded-lg shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3"
+                >
+                  <div className="flex-1">
+                    <h3 className="font-medium">{candidate.name}</h3>
+                    <p className="text-sm text-gray-600">
+                      Votes: {candidate.voteCount}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleVote(index)}
+                    className="w-full sm:w-auto px-4 py-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 text-sm"
+                  >
+                    Vote
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Admin Section */}
+        {account === "0xe11ff5Ec85b6988B87Bafcd8c46975aF3D346413" &&
+          !votingEnded && (
+            <div className="space-y-6">
+              <div className="p-4 bg-white rounded-lg shadow">
+                <h2 className="text-lg font-semibold mb-3">Add Candidate</h2>
+                <div className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={newCandidateName}
+                    onChange={(e) => setNewCandidateName(e.target.value)}
+                    placeholder="Candidate name"
+                    className="p-2 border rounded-lg text-sm"
+                  />
+                  <button
+                    onClick={handleAddCandidate}
+                    className="py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                  >
+                    Add Candidate
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleEndVoting}
+                className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+              >
+                End Voting
+              </button>
+            </div>
+          )}
       </div>
     </div>
   );
